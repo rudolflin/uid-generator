@@ -15,19 +15,18 @@
  */
 package com.baidu.fsg.uid.buffer;
 
+import com.baidu.fsg.uid.utils.NamingThreadFactory;
+import com.baidu.fsg.uid.utils.PaddedAtomicLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
+
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
-
-import com.baidu.fsg.uid.utils.NamingThreadFactory;
-import com.baidu.fsg.uid.utils.PaddedAtomicLong;
 
 /**
  * Represents an executor for padding {@link RingBuffer}<br>
@@ -47,6 +46,10 @@ public class BufferPaddingExecutor {
     private final AtomicBoolean running;
 
     /** We can borrow UIDs from the future, here store the last second we have consumed */
+    // liny 因为这个second是递增的,  所以就解决了时钟回拨的问题,  但是引入了新问题,  就是通了服务之后, lastSecond的初始化问题
+    //liny 另外还有泛解析后的id显示的时间和实际时间不一致的问题. 可以考虑使用使用数据库存下来对应关系, 专门做对照用  workerid也可以使用zk
+    // 可以做校正, 因为一次生成的是一秒的全量数据,  所以可能某些时间x没有生成数据,  比较当前要更新的lastSecond比x小, 那么使用x作为秒数计算,否则的话使用原来的方式
+    //liny  这样可以让时间差的幅度变小
     private final PaddedAtomicLong lastSecond;
 
     /** RingBuffer & BufferUidProvider */

@@ -15,19 +15,18 @@
  */
 package com.baidu.fsg.uid.impl;
 
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
-
 import com.baidu.fsg.uid.BitsAllocator;
 import com.baidu.fsg.uid.UidGenerator;
 import com.baidu.fsg.uid.exception.UidGenerateException;
 import com.baidu.fsg.uid.utils.DateUtils;
 import com.baidu.fsg.uid.worker.WorkerIdAssigner;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Represents an implementation of {@link UidGenerator}
@@ -143,6 +142,7 @@ public class DefaultUidGenerator implements UidGenerator, InitializingBean {
 
         // At the same second, increase sequence
         if (currentSecond == lastSecond) {
+            //按位与  为了如果sequence超过了sequence位数的最大值(10000后边是零) , 那么sequence的结果就会为0   ,走下面的if
             sequence = (sequence + 1) & bitsAllocator.getMaxSequence();
             // Exceed the max sequence, we wait the next second to generate uid
             if (sequence == 0) {
@@ -157,7 +157,8 @@ public class DefaultUidGenerator implements UidGenerator, InitializingBean {
         lastSecond = currentSecond;
 
         // Allocate bits for UID
-        return bitsAllocator.allocate(currentSecond - epochSeconds, workerId, sequence);
+        long allocateBits = bitsAllocator.allocate(currentSecond - epochSeconds, workerId, sequence);
+        return allocateBits;
     }
 
     /**

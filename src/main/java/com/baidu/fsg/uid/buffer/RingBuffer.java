@@ -15,13 +15,12 @@
  */
 package com.baidu.fsg.uid.buffer;
 
-import java.util.concurrent.atomic.AtomicLong;
-
+import com.baidu.fsg.uid.utils.PaddedAtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import com.baidu.fsg.uid.utils.PaddedAtomicLong;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Represents a ring buffer based on array.<br>
@@ -51,10 +50,10 @@ public class RingBuffer {
     private final long[] slots;
     private final PaddedAtomicLong[] flags;
 
-    /** Tail: last position sequence to produce */
+    /** Tail: last position sequence to produce */  //liny 值越界问题?
     private final AtomicLong tail = new PaddedAtomicLong(START_POINT);
 
-    /** Cursor: current position sequence to consume */
+    /** Cursor: current position sequence to consume *///liny 值越界问题?
     private final AtomicLong cursor = new PaddedAtomicLong(START_POINT);
 
     /** Threshold for trigger padding buffer*/
@@ -169,6 +168,7 @@ public class RingBuffer {
             rejectedTakeHandler.rejectTakeBuffer(this);
         }
 
+        //liny  是否有第二圈的问题, 并发情况,  判断之后, 别的线程在处理,   --> 不合理情况 都定义了handler
         // 1. check next slot flag is CAN_TAKE_FLAG
         int nextCursorIndex = calSlotIndex(nextCursor);
         Assert.isTrue(flags[nextCursorIndex].get() == CAN_TAKE_FLAG, "Curosr not in can take status");
