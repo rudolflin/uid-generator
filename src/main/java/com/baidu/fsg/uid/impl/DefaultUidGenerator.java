@@ -142,13 +142,24 @@ public class DefaultUidGenerator implements UidGenerator, InitializingBean {
 
         // At the same second, increase sequence
         if (currentSecond == lastSecond) {
-            //按位与  为了如果sequence超过了sequence位数的最大值(10000后边是零) , 那么sequence的结果就会为0   ,走下面的if
+
+            /***A*******************/
+            //按位与 , 当sequence+1== bitsAllocator.getMaxSequence() 时,sequence就为0,  走下面的if
             sequence = (sequence + 1) & bitsAllocator.getMaxSequence();
             // Exceed the max sequence, we wait the next second to generate uid
             if (sequence == 0) {
                 currentSecond = getNextSecond(lastSecond);
             }
-
+            /************************/
+            //以上A部分区块可等价为以下B区块 ,已通过测试
+            /**B**
+             *   if((sequence+1)==bitsAllocator.getMaxSequence()){
+             *              currentSecond = getNextSecond(lastSecond);
+             *              sequence=0;
+             *              }else{
+             *              sequence=sequence+1;
+             *              }
+             */
         // At the different second, sequence restart from zero
         } else {
             sequence = 0L;

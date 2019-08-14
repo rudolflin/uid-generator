@@ -50,7 +50,7 @@ public class RingBuffer {
     private final long[] slots;
     private final PaddedAtomicLong[] flags;
 
-    /** Tail: last position sequence to produce */  //liny 值越界问题?
+    /** Tail: last position sequence to produce */  //liny 值越界问题?   无影响, long类型, 而uid也是long, 若溢出, 那么标识生成的id也快到头了 , 不能用了
     private final AtomicLong tail = new PaddedAtomicLong(START_POINT);
 
     /** Cursor: current position sequence to consume *///liny 值越界问题?

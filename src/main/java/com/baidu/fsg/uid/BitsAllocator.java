@@ -67,9 +67,20 @@ public class BitsAllocator {
         this.sequenceBits = sequenceBits;
 
         // initialize max value
-        this.maxDeltaSeconds = ~(-1L << timestampBits);
-        this.maxWorkerId = ~(-1L << workerIdBits);
-        this.maxSequence = ~(-1L << sequenceBits);
+        /**
+         * 1 的二进制表示为 000000001(63个0)
+         * -1 的二进制表示为 1 的补码,  即1的反码加一
+         * 1的反码 :11111110(63个1), 再加1 即:  111111111(64个1)
+         * -1 左移 x位即为
+         * 11111110000000(x个0)
+         * 取反后
+         * 00000001111111(x个1)
+         * 故   2^n  可以使用~(-1L<<x)来计算
+         *
+         */
+        this.maxDeltaSeconds = ~(-1L << timestampBits); //2^28
+        this.maxWorkerId = ~(-1L << workerIdBits); //2^22
+        this.maxSequence = ~(-1L << sequenceBits); //2^13
 
         // initialize shift
         this.timestampShift = workerIdBits + sequenceBits;
