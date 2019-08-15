@@ -50,6 +50,11 @@ public class RingBuffer {
     private final long[] slots;
     private final PaddedAtomicLong[] flags;
 
+    /**
+     * liny 两个限制 1 tail不能超过cursor, --> tail不能比cursor大一圈
+     *                     2  cursor不能超过tail ----> cursor不能大于tail
+     */
+
     /** Tail: last position sequence to produce */  //liny 值越界问题?   无影响, long类型, 而uid也是long, 若溢出, 那么标识生成的id也快到头了 , 不能用了
     private final AtomicLong tail = new PaddedAtomicLong(START_POINT);
 
@@ -93,7 +98,7 @@ public class RingBuffer {
         this.indexMask = bufferSize - 1;
         this.slots = new long[bufferSize];
         this.flags = initFlags(bufferSize);
-        
+        //达到这个值就要进行填充了
         this.paddingThreshold = bufferSize * paddingFactor / 100;
     }
 
@@ -113,6 +118,7 @@ public class RingBuffer {
 
         // tail catches the cursor, means that you can't put any cause of RingBuffer is full
         long distance = currentTail - (currentCursor == START_POINT ? 0 : currentCursor);
+        //表示再填就超了一圈了, 所以不能填了
         if (distance == bufferSize - 1) {
             rejectedPutHandler.rejectPutBuffer(this, uid);
             return false;
@@ -207,6 +213,9 @@ public class RingBuffer {
     
     /**
      * Initialize flags as CAN_PUT_FLAG
+     * 一个缓存行是8bytes,  就是8个long
+     *2^13*2^3*8=2^19 bytes=512kB  , 内存占用不大
+     *这个方法可以理解为预加载机制
      */
     private PaddedAtomicLong[] initFlags(int bufferSize) {
         PaddedAtomicLong[] flags = new PaddedAtomicLong[bufferSize];

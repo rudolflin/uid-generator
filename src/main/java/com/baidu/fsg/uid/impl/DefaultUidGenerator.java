@@ -135,6 +135,7 @@ public class DefaultUidGenerator implements UidGenerator, InitializingBean {
         long currentSecond = getCurrentSecond();
 
         // Clock moved backwards, refuse to generate uid
+        //时钟回退, 抛出异常拒绝服务
         if (currentSecond < lastSecond) {
             long refusedSeconds = lastSecond - currentSecond;
             throw new UidGenerateException("Clock moved backwards. Refusing for %d seconds", refusedSeconds);
@@ -148,7 +149,7 @@ public class DefaultUidGenerator implements UidGenerator, InitializingBean {
             sequence = (sequence + 1) & bitsAllocator.getMaxSequence();
             // Exceed the max sequence, we wait the next second to generate uid
             if (sequence == 0) {
-                currentSecond = getNextSecond(lastSecond);
+                currentSecond = getNextSecond(lastSecond);  //这一秒的id用完了, 就自旋等待, 直到下一秒到来, 如果在等待的过程中发生了时钟回退, 等待时间就会大于一秒
             }
             /************************/
             //以上A部分区块可等价为以下B区块 ,已通过测试
@@ -161,6 +162,7 @@ public class DefaultUidGenerator implements UidGenerator, InitializingBean {
              *              }
              */
         // At the different second, sequence restart from zero
+        //不是同一秒, sequence置零 ,  小于之前时间的, 抛异常拒绝服务, 大于之前时间的, 置零, 生成当前秒数的id
         } else {
             sequence = 0L;
         }
@@ -177,6 +179,7 @@ public class DefaultUidGenerator implements UidGenerator, InitializingBean {
      */
     private long getNextSecond(long lastTimestamp) {
         long timestamp = getCurrentSecond();
+        //,,如果发生了时间回退调整, 那么一直等待, 直到时间达到新的时间
         while (timestamp <= lastTimestamp) {
             timestamp = getCurrentSecond();
         }

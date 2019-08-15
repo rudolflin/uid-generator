@@ -15,14 +15,6 @@
  */
 package com.baidu.fsg.uid.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.util.Assert;
-
 import com.baidu.fsg.uid.BitsAllocator;
 import com.baidu.fsg.uid.UidGenerator;
 import com.baidu.fsg.uid.buffer.BufferPaddingExecutor;
@@ -30,6 +22,13 @@ import com.baidu.fsg.uid.buffer.RejectedPutBufferHandler;
 import com.baidu.fsg.uid.buffer.RejectedTakeBufferHandler;
 import com.baidu.fsg.uid.buffer.RingBuffer;
 import com.baidu.fsg.uid.exception.UidGenerateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.util.Assert;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents a cached implementation of {@link UidGenerator} extends
@@ -55,6 +54,7 @@ public class CachedUidGenerator extends DefaultUidGenerator implements Disposabl
     /** Spring properties */
     private int boostPower = DEFAULT_BOOST_POWER;
     private int paddingFactor = RingBuffer.DEFAULT_PADDING_PERCENT;
+    //定时任务的间隔
     private Long scheduleInterval;
     
     private RejectedPutBufferHandler rejectedPutBufferHandler;
@@ -106,6 +106,7 @@ public class CachedUidGenerator extends DefaultUidGenerator implements Disposabl
         List<Long> uidList = new ArrayList<>(listSize);
 
         // Allocate the first sequence of the second, the others can be calculated with the offset
+        //通过雪花算法算出这一秒的第一个id, 然后累加到这一秒的最大值
         long firstSeqUid = bitsAllocator.allocate(currentSecond - epochSeconds, workerId, 0L);
         for (int offset = 0; offset < listSize; offset++) {
             uidList.add(firstSeqUid + offset);
@@ -119,6 +120,8 @@ public class CachedUidGenerator extends DefaultUidGenerator implements Disposabl
      */
     private void initRingBuffer() {
         // initialize RingBuffer
+        //buffersize要是2的n次方, 这样方便计算机计算, 更有效率
+        //bitsAllocator.getMaxSequence()的值是2^m-1,  加一后就是2^m,
         int bufferSize = ((int) bitsAllocator.getMaxSequence() + 1) << boostPower;
         this.ringBuffer = new RingBuffer(bufferSize, paddingFactor);
         LOGGER.info("Initialized ring buffer size:{}, paddingFactor:{}", bufferSize, paddingFactor);
